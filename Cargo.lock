@@ -129,7 +129,7 @@ checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 [[package]]
 name = "bat"
 version = "0.24.0"
-source = "git+https://github.com/jacobsandlund/bat.git?branch=jacob#c1d45d094d7e5a262106d4b57b3a72f0bbc348c2"
+source = "git+https://github.com/jacobsandlund/bat.git?branch=jacob#31241b7a77ab8ebd2bda56de6db11d3a2a02824e"
 dependencies = [
  "ansi_colours",
  "anyhow",
