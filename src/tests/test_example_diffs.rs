@@ -530,6 +530,7 @@ commit 94907c0f136f46dc46ffae2dc92dca9af7eb7c2e
             "blue",
             "--commit-decoration-style",
             "blue box",
+            "--width=64",
         ]);
     }
 
@@ -688,6 +689,7 @@ commit 94907c0f136f46dc46ffae2dc92dca9af7eb7c2e │
             "yellow",
             "--commit-decoration-style",
             "yellow underline",
+            "--width=47",
         ]);
     }
 
@@ -1454,6 +1456,7 @@ src/align.rs:71: impl<'a> Alignment<'a> { │
             "raw",
             "--hunk-header-decoration-style",
             "box",
+            "--width=64",
         ]);
         let output = integration_test_utils::run_delta(GIT_DIFF_SINGLE_HUNK, &config);
         ansi_test_utils::assert_line_has_no_color(
@@ -1468,6 +1471,100 @@ src/align.rs:71: impl<'a> Alignment<'a> { │
 ────────────────────────────────────────────┘
 "
         ));
+    }
+
+    #[test]
+    fn test_decorations_are_not_wider_than_width() {
+        let output = DeltaTest::with_args(&["--width=30"])
+            .with_input(DIFF_WITH_LONG_FILE_PATH_AND_HUNK_HEADER)
+            .output;
+        assert_snapshot!(output, @r###"
+
+        src/handlers/a_long_file_name.rs
+        ──────────────────────────────
+
+        ─────────────────────────────┐
+        1: fn a_long_function_name(a │
+        n_argument: usize) {         │
+        ─────────────────────────────┘
+        a
+        b
+        c
+        d
+        "###);
+    }
+
+    #[test]
+    fn test_decorations_are_not_wider_than_width_ul_ol_and_box_ul() {
+        let output = DeltaTest::with_args(&[
+            "--width=30",
+            "--file-decoration-style",
+            "ul ol",
+            "--hunk-header-decoration-style",
+            "box ul",
+        ])
+        .with_input(DIFF_WITH_LONG_FILE_PATH_AND_HUNK_HEADER)
+        .output;
+        assert_snapshot!(output, @r###"
+
+        ──────────────────────────────
+        src/handlers/a_long_file_name.rs
+        ──────────────────────────────
+
+        ─────────────────────────────┐
+        1: fn a_long_function_name(a │
+        n_argument: usize) {         │
+        ─────────────────────────────┴
+        a
+        b
+        c
+        d
+        "###);
+    }
+
+    #[test]
+    fn test_box_decoration_wraps_text_that_fills_last_line() {
+        let output = DeltaTest::with_args(&["--width=18", "--file-decoration-style", "box"])
+            .with_input(DIFF_WITH_LONG_FILE_PATH_AND_HUNK_HEADER)
+            .output;
+        assert_snapshot!(output, @r###"
+
+        ─────────────────┐
+        src/handlers/a_l │
+        ong_file_name.rs │
+        ─────────────────┘
+
+        ─────────────────┐
+        1: fn a_long_fun │
+        ction_name(an_ar │
+        gument: usize) { │
+        ─────────────────┘
+        a
+        b
+        c
+        d
+        "###);
+    }
+
+    #[test]
+    fn test_decorations_extend_to_end_of_text_with_width_variable() {
+        let output = DeltaTest::with_args(&["--width=variable"])
+            .set_config(|c| c.available_terminal_width = 30)
+            .with_input(DIFF_WITH_LONG_FILE_PATH_AND_HUNK_HEADER)
+            .output;
+        assert_snapshot!(output, @r###"
+
+        src/handlers/a_long_file_name.rs
+        ────────────────────────────────
+
+        ─────────────────────────────────────────────────┐
+        1: fn a_long_function_name(an_argument: usize) { │
+        ─────────────────────────────────────────────────┘
+        a
+        b
+        c
+        d
+        "###);
     }
 
     #[test]
@@ -1917,6 +2014,33 @@ src/align.rs:71: impl<'a> Alignment<'a> { │
     }
 
     #[test]
+    fn test_file_mode_change_with_box_decoration() {
+        let output = DeltaTest::with_args(&["--file-decoration-style", "box"])
+            .with_input(GIT_DIFF_FILE_MODE_CHANGE_GAIN_EXECUTABLE_BIT)
+            .output;
+        assert_snapshot!(output, @r###"
+
+
+        ───────────────────────┐
+        src/delta.rs  (mode +x)│
+        ───────────────────────┘
+        "###);
+    }
+
+    #[test]
+    fn test_file_mode_change_with_width_variable() {
+        let output = DeltaTest::with_args(&["--width=variable"])
+            .with_input(GIT_DIFF_FILE_MODE_CHANGE_GAIN_EXECUTABLE_BIT)
+            .output;
+        assert_snapshot!(output, @r###"
+
+
+        src/delta.rs (mode +x)
+        ──────────────────────
+        "###);
+    }
+
+    #[test]
     fn test_file_mode_change_lose_executable_bit() {
         DeltaTest::with_args(&[])
             .with_input(GIT_DIFF_FILE_MODE_CHANGE_LOSE_EXECUTABLE_BIT)
@@ -2060,25 +2184,25 @@ src/align.rs:71: impl<'a> Alignment<'a> { │
         (blue)71(normal):(231) (81)impl(231)<(203)'a(231)> (149)Alignment(231)<(203)'a(normal)> { (blue)│(normal)
         (blue)─────────────────────────────(blue)┘(normal)
 
-        (blue)│(238) 71 (blue)│(231)        (203)for(231) (i, x_i)(blue)↵(blue) │(238) 71 (blue)│(231)        (203)for(231) (i, x_i)(blue)↵(normal)
-        (blue)│(238)    (blue)│(231) i(normal)n self.x.iter().en(reverse normal)→(blue) │(238)    (blue)│(231) i(normal)n self.x.iter().en(reverse normal)→(normal)
-        (blue)│(238) 72 (blue)│(231)            (203)for(231) (j, (blue)↵(blue) │(238) 72 (blue)│(231)            (203)for(231) (j, (blue)↵(normal)
-        (blue)│(238)    (blue)│(231)y_(normal)j) in self.y.iter((reverse normal)→(blue) │(238)    (blue)│(231)y_(normal)j) in self.y.iter((reverse normal)→(normal)
-        (blue)│(88) 73 (blue)│(231 52)                (81)let(231) (blue)↵(blue) │(28) 73 (blue)│(231 22)                (81)let(231) (blue)↵(normal)
-        (blue)│(88)    (blue)│(231 52)(l(normal 52)eft, diag, up) =(normal 124) ((normal 52) (blue) │(28)    (blue)│(231 22)(l(normal 22)eft, diag, up) =(normal)
-        (blue)│(88) 74 (blue)│(231 52)                    (blue)↵(blue) │(28) 74 (blue)│(231 22)                    (blue)↵(normal)
-        (blue)│(88)    (blue)│(231 52)se(normal 52)lf.index(i, j + 1),(blue) │(28)    (blue)│(231 28)((normal 22)s(normal 22)elf.index(i, j + 1(reverse normal)→(normal)
-        (blue)│(88) 75 (blue)│(231 52)                    (blue)↵(blue) │(28)    (blue)│(normal)
-        (blue)│(88)    (blue)│(231 52)se(normal 52)lf.index(i, j),(normal 52)    (blue) │(28)    (blue)│(normal)
-        (blue)│(88) 76 (blue)│(231 52)                    (blue)↵(blue) │(28)    (blue)│(normal)
-        (blue)│(88)    (blue)│(231 52)se(normal 52)lf.index(i + 1, j),(blue) │(28)    (blue)│(normal)
-        (blue)│(88) 77 (blue)│(231 52)                );(normal 52)   (blue) │(28)    (blue)│(normal)
-        (blue)│(238) 78 (blue)│(231)                (81)let(231) (blue)↵(blue) │(238) 75 (blue)│(231)                (81)let(231) (blue)↵(normal)
-        (blue)│(238)    (blue)│(231)ca(normal)ndidates = [       (blue) │(238)    (blue)│(231)ca(normal)ndidates = [
-        (blue)│(238) 79 (blue)│(231)                    (blue)↵(blue) │(238) 76 (blue)│(231)                    (blue)↵(normal)
-        (blue)│(238)    (blue)│(231)Ce(normal)ll {               (blue) │(238)    (blue)│(231)Ce(normal)ll {
-        (blue)│(238) 80 (blue)│(231)                    (blue)↵(blue) │(238) 77 (blue)│(231)                    (blue)↵(normal)
-        (blue)│(238)    (blue)│(231)  (normal)  parent: left,    (blue) │(238)    (blue)│(231)  (normal)  parent: left,
+        (238)│ 71 │(231)        (203)for(231) (i, x_i)(blue)↵(238) │ 71 │(231)        (203)for(231) (i, x_i)(blue)↵(normal)
+        (238)│    │(231) i(normal)n self.x.iter().en(reverse normal)→(238) │    │(231) i(normal)n self.x.iter().en(reverse normal)→(normal)
+        (238)│ 72 │(231)            (203)for(231) (j, (blue)↵(238) │ 72 │(231)            (203)for(231) (j, (blue)↵(normal)
+        (238)│    │(231)y_(normal)j) in self.y.iter((reverse normal)→(238) │    │(231)y_(normal)j) in self.y.iter((reverse normal)→(normal)
+        (88)│ 73 │(231 52)                (81)let(231) (blue)↵(28) │ 73 │(231 22)                (81)let(231) (blue)↵(normal)
+        (88)│    │(231 52)(l(normal 52)eft, diag, up) =(normal 124) ((normal 52) (28) │    │(231 22)(l(normal 22)eft, diag, up) =(normal)
+        (88)│ 74 │(231 52)                    (blue)↵(28) │ 74 │(231 22)                    (blue)↵(normal)
+        (88)│    │(231 52)se(normal 52)lf.index(i, j + 1),(28) │    │(231 28)((normal 22)s(normal 22)elf.index(i, j + 1(reverse normal)→(normal)
+        (88)│ 75 │(231 52)                    (blue)↵(88) │    │(normal)
+        (88)│    │(231 52)se(normal 52)lf.index(i, j),(normal 52)    (88) │    │(normal)
+        (88)│ 76 │(231 52)                    (blue)↵(88) │    │(normal)
+        (88)│    │(231 52)se(normal 52)lf.index(i + 1, j),(88) │    │(normal)
+        (88)│ 77 │(231 52)                );(normal 52)   (88) │    │(normal)
+        (238)│ 78 │(231)                (81)let(231) (blue)↵(238) │ 75 │(231)                (81)let(231) (blue)↵(normal)
+        (238)│    │(231)ca(normal)ndidates = [       (238) │    │(231)ca(normal)ndidates = [
+        (238)│ 79 │(231)                    (blue)↵(238) │ 76 │(231)                    (blue)↵(normal)
+        (238)│    │(231)Ce(normal)ll {               (238) │    │(231)Ce(normal)ll {
+        (238)│ 80 │(231)                    (blue)↵(238) │ 77 │(231)                    (blue)↵(normal)
+        (238)│    │(231)  (normal)  parent: left,    (238) │    │(231)  (normal)  parent: left,
         "###);
     }
 
@@ -2136,6 +2260,48 @@ src/align.rs:71: impl<'a> Alignment<'a> { │
         (231)¶(normal)
         "###);
     }
+
+    #[test]
+    fn test_color_only_diff_filter_zero_style_bg() {
+        let result =
+            DeltaTest::with_args(&["--color-only", r##"--zero-style='syntax "#1d1f21" dim'"##])
+                .set_config(|c| c.available_terminal_width = 80)
+                .explain_ansi()
+                .with_input(GIT_DIFF_OF_WIDTH_81);
+
+        assert_snapshot!(result.output, @r###"
+        (normal)
+        --- a.rs
+        +++ b.rs
+        @@ -1,3 +1,3 @@
+        (normal 22)+(231)  (203)if(231) (81)let(231) (149)Ok(231)(foo) { (242)//    Works fine with plus hunk lines which are longer     81(normal)
+        (normal 52)-//                            and it works fine with minus lines, however     81(normal)
+        (dim normal 234) (242)//         styled(!) zero lines can only be as long as the width fallback of 80(normal)
+        (dim normal 234) (231)panic!(); (242)/*     if no tty can be queried, and delta crashes on longer lines: 81(normal)
+        "###);
+    }
+
+    const GIT_DIFF_OF_WIDTH_81: &str = r#"
+--- a.rs
++++ b.rs
+@@ -1,3 +1,3 @@
++  if let Ok(foo) { //    Works fine with plus hunk lines which are longer     81
+-//                            and it works fine with minus lines, however     81
+ //         styled(!) zero lines can only be as long as the width fallback of 80
+ panic!(); /*     if no tty can be queried, and delta crashes on longer lines: 81
+"#;
+
+    const DIFF_WITH_LONG_FILE_PATH_AND_HUNK_HEADER: &str = "\
+diff --git a/src/handlers/a_long_file_name.rs b/src/handlers/a_long_file_name.rs
+index 8e37a9e..6ce4863 100644
+--- a/src/handlers/a_long_file_name.rs
++++ b/src/handlers/a_long_file_name.rs
+@@ -1,3 +1,3 @@ fn a_long_function_name(an_argument: usize) {
+ a
+-b
++c
+ d
+";
 
     const GIT_DIFF_SINGLE_HUNK: &str = "\
 commit 94907c0f136f46dc46ffae2dc92dca9af7eb7c2e

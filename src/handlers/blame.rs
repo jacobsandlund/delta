@@ -307,19 +307,14 @@ pub fn format_blame_line_number(
 ) -> (&str, String, &str) {
     let (format, empty) = match &format {
         BlameLineNumbers::PerBlock(format) => (format, is_repeat),
-        BlameLineNumbers::Every(n, format) => (format, is_repeat && line_number % n != 0),
+        BlameLineNumbers::Every(n, format) => (format, is_repeat && line_number.is_multiple_of(*n)),
         BlameLineNumbers::On(format) => (format, false),
     };
     let mut result = String::new();
 
     // depends on defaults being set when parsing arguments
-    let line_number = if format.width.is_some() {
-        format::pad(
-            line_number,
-            format.width.unwrap(),
-            format.alignment_spec.unwrap(),
-            None,
-        )
+    let line_number = if let Some(width) = format.width {
+        format::pad(line_number, width, format.alignment_spec.unwrap(), None)
     } else {
         String::new()
     };
@@ -546,7 +541,7 @@ mod tests {
             .collect()
     }
 
-    fn make_blame_line_with_time(timestamp: &str) -> BlameLine {
+    fn make_blame_line_with_time(timestamp: &str) -> BlameLine<'_> {
         let time = chrono::DateTime::parse_from_rfc3339(timestamp).unwrap();
         BlameLine {
             commit: "",
@@ -557,14 +552,16 @@ mod tests {
         }
     }
 
-    fn make_format_data_with_placeholder(placeholder: &str) -> format::FormatStringPlaceholderData {
+    fn make_format_data_with_placeholder(
+        placeholder: &str,
+    ) -> format::FormatStringPlaceholderData<'_> {
         format::FormatStringPlaceholderData {
             placeholder: Some(Placeholder::Str(placeholder)),
             ..Default::default()
         }
     }
 
-    fn make_blame_line_with_author(author: &str) -> BlameLine {
+    fn make_blame_line_with_author(author: &str) -> BlameLine<'_> {
         BlameLine {
             commit: "",
             author,

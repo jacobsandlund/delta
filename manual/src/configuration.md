@@ -18,7 +18,7 @@ Delta uses [git config](https://git-scm.com/docs/git-config#_configuration_file)
     dark = true      # or light = true, or omit for auto-detection
 
 [merge]
-    conflictstyle = zdiff3
+    conflictStyle = zdiff3
 ```
 
 You do not even need to use git -- delta accepts `git diff` and unified diff formats and hence works with e.g. mercurial and jujutsu -- but you do need to use the git config format.
@@ -58,3 +58,13 @@ git -c delta.line-numbers=false show
 
 There are several important environment variables that affect delta configuration and which can be used to configure delta dynamically.
 Please see [Environment variables](./environment-variables.md).
+
+## Jujutsu
+
+For [Jujutsu](https://github.com/jj-vcs/jj) users, add this to your `~/.config/jj/config.toml`:
+
+```toml
+[ui]
+pager = "delta"
+diff-formatter = ":git"
+```
